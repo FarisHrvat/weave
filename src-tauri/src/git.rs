@@ -173,7 +173,12 @@ fn worktrees(path: &str) -> Result<Vec<GitWorktree>, String> {
                 result.push(worktree);
             }
             current = Some(GitWorktree {
-                path: value.to_owned(),
+                // Git prints C:/x on Windows; use the system's own form.
+                path: if cfg!(windows) {
+                    value.replace('/', "\\")
+                } else {
+                    value.to_owned()
+                },
                 branch: "Detached HEAD".into(),
                 main: result.is_empty(),
                 locked: false,
