@@ -569,9 +569,9 @@ pub(crate) fn plan_sync_excluding(
     if left_profile == right_profile {
         let (left_root, right_root) = if left_profile.is_none() {
             (
-                fs::canonicalize(left_path)
+                dunce::canonicalize(left_path)
                     .map_err(|error| format!("Could not open the left folder: {error}"))?,
-                fs::canonicalize(right_path)
+                dunce::canonicalize(right_path)
                     .map_err(|error| format!("Could not open the right folder: {error}"))?,
             )
         } else {
@@ -949,12 +949,19 @@ impl Backend {
     }
 
     fn stat(&mut self, path: &str) -> Result<Item, String> {
-        let name = path
-            .trim_end_matches('/')
-            .rsplit('/')
-            .next()
-            .unwrap_or(path)
-            .to_string();
+        let name = match self {
+            // Local paths use the system's separator (a backslash on Windows).
+            Self::Local => Path::new(path).file_name().map_or_else(
+                || path.to_string(),
+                |name| name.to_string_lossy().into_owned(),
+            ),
+            _ => path
+                .trim_end_matches('/')
+                .rsplit('/')
+                .next()
+                .unwrap_or(path)
+                .to_string(),
+        };
         match self {
             Self::Local => {
                 let meta = fs::symlink_metadata(path)
@@ -1627,10 +1634,10 @@ fn read_batch_manifest(state: &AppState, path: &str) -> Result<BatchPreview, Str
             }
         }
         if item.source_profile.is_none() && item.destination_profile.is_none() {
-            let source = fs::canonicalize(&item.source_path).map_err(|error| {
+            let source = dunce::canonicalize(&item.source_path).map_err(|error| {
                 format!("Copy plan row {row}: cannot resolve the local source: {error}")
             })?;
-            let destination = fs::canonicalize(&item.destination_dir).map_err(|error| {
+            let destination = dunce::canonicalize(&item.destination_dir).map_err(|error| {
                 format!("Copy plan row {row}: cannot resolve the local destination: {error}")
             })?;
             if source.is_dir() && destination.starts_with(&source) {
@@ -2162,9 +2169,13 @@ fn run_transfer<R: Runtime>(
     if source_item.is_dir
         && record.source_profile == record.destination_profile
         && (record.destination_dir == record.source_path
-            || record
-                .destination_dir
-                .starts_with(&(record.source_path.trim_end_matches('/').to_string() + "/")))
+            || if record.source_profile.is_none() {
+                Path::new(&record.destination_dir).starts_with(&record.source_path)
+            } else {
+                record
+                    .destination_dir
+                    .starts_with(&(record.source_path.trim_end_matches('/').to_string() + "/"))
+            })
     {
         return Err("Cannot copy a folder into itself or a subfolder.".into());
     }
@@ -2963,7 +2974,13 @@ mod tests {
         let copied: Vec<_> = plan
             .copies
             .iter()
-            .map(|copy| copy.source_path.rsplit('/').next().unwrap().to_string())
+            .map(|copy| {
+                Path::new(&copy.source_path)
+                    .file_name()
+                    .unwrap()
+                    .to_string_lossy()
+                    .into_owned()
+            })
             .collect();
         assert_eq!(copied, ["app.js"]);
         assert!(

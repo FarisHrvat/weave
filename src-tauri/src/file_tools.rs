@@ -265,6 +265,14 @@ fn plain_name(name: &str) -> bool {
 }
 
 /// A shell script that packs `names` (inside the current folder) into `output`.
+/// Finds a tar that reads and writes zip files: bsdtar, which is the `tar`
+/// on macOS and the `tar.exe` that comes with Windows 10 and 11.
+const FIND_BSDTAR: &str = r#"bsdtar=
+for candidate in bsdtar tar "$(cygpath -u "${SYSTEMROOT:-C:/Windows}" 2>/dev/null)/System32/tar.exe"; do
+  if command -v "$candidate" >/dev/null 2>&1 && "$candidate" --version 2>/dev/null | grep -q bsdtar; then bsdtar=$candidate; break; fi
+done
+"#;
+
 pub(crate) fn archive_script(
     names: &[String],
     format: &str,
@@ -289,6 +297,16 @@ pub(crate) fn archive_script(
         .map(|name| quote(&format!("./{name}")))
         .collect();
     let output = quote(&format!("./{output}"));
+    if format == "zip" {
+        return Ok(format!(
+            "[ -e {output} ] && {{ echo 'A file with that name already exists.' >&2; exit 4; }}\n\
+             if command -v zip >/dev/null 2>&1; then zip -q -r -y {output} {inputs}; exit $?; fi\n\
+             {FIND_BSDTAR}\
+             [ -n \"$bsdtar\" ] || {{ echo 'zip is not installed here. Choose another format.' >&2; exit 3; }}\n\
+             \"$bsdtar\" -a -cf {output} {inputs}",
+            inputs = inputs.join(" ")
+        ));
+    }
     Ok(format!(
         "command -v {tool} >/dev/null 2>&1 || {{ echo '{tool} is not installed here. Choose another format.' >&2; exit 3; }}\n\
          [ -e {output} ] && {{ echo 'A file with that name already exists.' >&2; exit 4; }}\n\
@@ -325,7 +343,18 @@ pub(crate) fn extract_script(name: &str) -> Result<String, String> {
     };
     let tool = command.split(' ').next().unwrap_or("tar");
     let archive = quote(&format!("./{name}"));
-    let into = if tool == "unzip" { "-d" } else { "-C" };
+    if tool == "unzip" {
+        return Ok(format!(
+            "{FIND_BSDTAR}\
+             if command -v unzip >/dev/null 2>&1; then extract() {{ unzip -q \"$1\" -d \"$2\"; }}\n\
+             elif [ -n \"$bsdtar\" ]; then extract() {{ \"$bsdtar\" -xf \"$1\" -C \"$2\"; }}\n\
+             else echo 'unzip is not installed here.' >&2; exit 3; fi\n\
+             target={stem}; n=2; while [ -e \"$target\" ]; do target={stem}\" $n\"; n=$((n+1)); done\n\
+             mkdir -- \"$target\" && extract {archive} \"$target\" && printf '%s' \"$target\"",
+            stem = quote(&format!("./{stem}")),
+        ));
+    }
+    let into = "-C";
     Ok(format!(
         "command -v {tool} >/dev/null 2>&1 || {{ echo '{tool} is not installed here.' >&2; exit 3; }}\n\
          target={}; n=2; while [ -e \"$target\" ]; do target={}\" $n\"; n=$((n+1)); done\n\
@@ -418,6 +447,39 @@ mod tests {
         assert!(shell(None, None, "echo nope >&2; exit 3")
             .unwrap_err()
             .contains("nope"));
+    }
+
+    /// Windows has no zip or unzip; its tar.exe (bsdtar) handles zip files.
+    #[test]
+    fn falls_back_to_bsdtar_for_zip_files() {
+        let has_bsdtar = crate::platform::command("tar")
+            .arg("--version")
+            .output()
+            .is_ok_and(|output| String::from_utf8_lossy(&output.stdout).contains("bsdtar"));
+        if !has_bsdtar && !cfg!(windows) {
+            return;
+        }
+        let dir = tempfile::tempdir().unwrap();
+        let cwd = dir.path().to_str().unwrap();
+        std::fs::write(dir.path().join("note.txt"), "zipped").unwrap();
+        let without = |script: String| {
+            script
+                .replace("command -v zip ", "false ")
+                .replace("command -v unzip ", "false ")
+        };
+        let names = vec!["note.txt".to_string()];
+        shell(
+            None,
+            Some(cwd),
+            &without(archive_script(&names, "zip", "a.zip").unwrap()),
+        )
+        .unwrap();
+        let folder = shell(None, Some(cwd), &without(extract_script("a.zip").unwrap())).unwrap();
+        let folder = folder.trim().trim_start_matches("./");
+        assert_eq!(
+            std::fs::read_to_string(dir.path().join(folder).join("note.txt")).unwrap(),
+            "zipped"
+        );
     }
 
     #[test]

@@ -43,15 +43,23 @@ pub(crate) fn split_line(line: &str) -> Result<Vec<String>, String> {
     Ok(words)
 }
 
+/// The drive of a Windows path such as `C:/Users`, written as "C:".
+fn drive(path: &str) -> Option<&str> {
+    let bytes = path.as_bytes();
+    (bytes.len() >= 2 && bytes[0].is_ascii_alphabetic() && bytes[1] == b':').then(|| &path[..2])
+}
+
 /// Joins a path typed in a script onto the current folder of that side.
+/// Paths use forward slashes; a Windows drive such as `C:/` counts as a root.
 pub(crate) fn join(current: &str, path: &str) -> String {
-    let combined = if path.starts_with('/') {
+    let combined = if path.starts_with('/') || drive(path).is_some() {
         path.to_string()
     } else {
         format!("{}/{path}", current.trim_end_matches('/'))
     };
+    let root = drive(&combined).unwrap_or("");
     let mut parts: Vec<&str> = Vec::new();
-    for part in combined.split('/') {
+    for part in combined[root.len()..].split('/') {
         match part {
             "" | "." => {}
             ".." => {
@@ -60,12 +68,15 @@ pub(crate) fn join(current: &str, path: &str) -> String {
             part => parts.push(part),
         }
     }
-    format!("/{}", parts.join("/"))
+    format!("{root}/{}", parts.join("/"))
 }
 
 fn parent_and_name(path: &str) -> (String, String) {
     match path.rsplit_once('/') {
         Some(("", name)) => ("/".into(), name.into()),
+        Some((parent, name)) if drive(parent) == Some(parent) => {
+            (format!("{parent}/"), name.into())
+        }
         Some((parent, name)) => (parent.into(), name.into()),
         None => ("/".into(), path.into()),
     }
@@ -185,7 +196,10 @@ impl<'a, R: Runtime> Run<'a, R> {
                     backend: None,
                 };
                 let home = side.backend(&state)?.stat(".").map(|item| item.path).ok();
-                side.dir = home.filter(|path| path.starts_with('/')).unwrap_or_else(|| "/".into());
+                side.dir = home
+                    .map(|path| path.replace('\\', "/"))
+                    .filter(|path| path.starts_with('/') || drive(path).is_some())
+                    .unwrap_or_else(|| "/".into());
                 (self.log)(&format!("Connected. Remote folder: {}", side.dir));
                 self.remote = Some(side);
             }
@@ -476,6 +490,8 @@ pub async fn files_script_run(
         } else {
             local_dir
         };
+        // Scripts write paths with forward slashes on every system.
+        let start = start.replace('\\', "/");
         let mut run = Run::new(&app, &start, &stop, &mut log);
         match run.script(&script) {
             Ok(failures) => ScriptOutcome {
@@ -522,12 +538,16 @@ mod tests {
         assert_eq!(join("/home/ada", "logs/../www"), "/home/ada/www");
         assert_eq!(join("/home/ada", "/etc"), "/etc");
         assert_eq!(join("/", ".."), "/");
+        assert_eq!(join("C:/Users/ada", "../bob/x"), "C:/Users/bob/x");
+        assert_eq!(join("/home", "D:/data"), "D:/data");
+        assert_eq!(join("C:/", ".."), "C:/");
+        assert_eq!(parent_and_name("C:/a.txt"), ("C:/".into(), "a.txt".into()));
     }
 
     #[test]
     fn runs_a_local_script_through_the_queue() {
         let root = tempfile::tempdir().unwrap();
-        let base = root.path().canonicalize().unwrap();
+        let base = dunce::canonicalize(root.path()).unwrap();
         let local = base.join("local");
         let remote = base.join("remote");
         fs::create_dir_all(local.join("sub")).unwrap();
@@ -550,13 +570,14 @@ mod tests {
         app.manage(state);
         let script = format!(
             "# copy and tidy up\nopen local\ncd \"{remote}\"\nput *.txt\nmkdir archive\nmv a.txt \"archive/a copy.txt\"\nls\nsync up sub \"{mirror}\" --delete\noption errors continue\nrm archive\nrm -r archive\nexit\necho never",
-            remote = remote.display(),
-            mirror = mirror.display()
+            remote = remote.to_string_lossy().replace('\\', "/"),
+            mirror = mirror.to_string_lossy().replace('\\', "/")
         );
         let stop = AtomicBool::new(false);
         let mut lines = Vec::new();
         let mut log = |line: &str| lines.push(line.to_string());
-        let failures = Run::new(app.handle(), local.to_str().unwrap(), &stop, &mut log)
+        let local_dir = local.to_string_lossy().replace('\\', "/");
+        let failures = Run::new(app.handle(), &local_dir, &stop, &mut log)
             .script(&script)
             .unwrap();
         assert_eq!(failures, 1, "{lines:?}");

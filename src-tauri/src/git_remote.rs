@@ -18,7 +18,19 @@ pub struct RemoteRepository {
 
 /// Paths may be absolute or start with `~/`, must end in `.git`, and use a
 /// conservative character set so they are safe inside single quotes.
+/// A Windows path such as `C:/git/app.git` without its drive, so the same
+/// checks apply on every system. Paths use forward slashes.
+fn without_drive(path: &str) -> &str {
+    let bytes = path.as_bytes();
+    if bytes.len() > 2 && bytes[0].is_ascii_alphabetic() && bytes[1] == b':' && bytes[2] == b'/' {
+        &path[2..]
+    } else {
+        path
+    }
+}
+
 pub(crate) fn valid_repo_path(path: &str) -> bool {
+    let path = without_drive(path);
     let body = path.strip_prefix("~/").unwrap_or(path);
     (path.starts_with('/') || path.starts_with("~/"))
         && path.ends_with(".git")
@@ -32,6 +44,7 @@ pub(crate) fn valid_repo_path(path: &str) -> bool {
 }
 
 fn valid_folder(path: &str) -> bool {
+    let path = without_drive(path);
     path == "~"
         || ((path.starts_with('/') || path.starts_with("~/"))
             && path.len() <= 512
@@ -498,7 +511,7 @@ mod tests {
     #[test]
     fn manages_server_hooks_that_run_on_push() {
         let root = tempfile::tempdir().unwrap();
-        let folder = root.path().canonicalize().unwrap();
+        let folder = dunce::canonicalize(root.path()).unwrap();
         let repo = format!("{}/hooked.git", folder.display());
         create(None, &repo, "main", "").unwrap();
         assert!(hooks_list(None, &repo).unwrap().is_empty());
@@ -564,9 +577,11 @@ mod tests {
     #[test]
     fn creates_configures_lists_clones_and_deletes_bare_repositories() {
         let root = tempfile::tempdir().unwrap();
-        let folder = root.path().canonicalize().unwrap();
-        let folder = folder.to_string_lossy();
+        let folder = dunce::canonicalize(root.path()).unwrap();
+        let folder = folder.to_string_lossy().replace('\\', "/");
         let repo = format!("{folder}/team/app.git");
+        assert!(valid_repo_path("C:/git/app.git"));
+        assert!(!valid_repo_path("C:git/app.git"));
         let created = create(None, &repo, "trunk", "Team app — it's ours").unwrap();
         assert!(created.ends_with("/team/app.git"));
         assert!(create(None, &repo, "trunk", "")
@@ -687,7 +702,7 @@ mod tests {
         assert!(master.status.success());
 
         let root = tempfile::tempdir().unwrap();
-        let folder = root.path().canonicalize().unwrap();
+        let folder = dunce::canonicalize(root.path()).unwrap();
         let folder = folder.to_string_lossy();
         let repo = format!("{folder}/served/app.git");
         create(Some(&profile), &repo, "main", "Served over SSH").unwrap();

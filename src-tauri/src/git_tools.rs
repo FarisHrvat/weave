@@ -181,8 +181,7 @@ pub fn git_signing_trust_add(
     let parent = trust_path
         .parent()
         .ok_or("Could not locate this repository's Git directory.")?;
-    let parent = parent
-        .canonicalize()
+    let parent = dunce::canonicalize(parent)
         .map_err(|error| format!("Could not open this repository's Git directory: {error}"))?;
     let trust_path = parent.join("weave-allowed-signers");
     let current =

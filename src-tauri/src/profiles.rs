@@ -635,7 +635,7 @@ pub fn repos_list(state: State<'_, AppState>) -> Result<Vec<Repo>, String> {
 #[tauri::command]
 pub fn repos_add(state: State<'_, AppState>, path: String) -> Result<Repo, String> {
     let canonical =
-        std::fs::canonicalize(&path).map_err(|error| format!("Cannot open {path}: {error}"))?;
+        dunce::canonicalize(&path).map_err(|error| format!("Cannot open {path}: {error}"))?;
     let output = crate::platform::command("git")
         .arg("-C")
         .arg(&canonical)

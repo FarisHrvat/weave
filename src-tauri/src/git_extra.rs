@@ -155,11 +155,9 @@ const TOOLS: [(&str, &str); 11] = [
 
 /// Whether a tool exists for this system at all.
 fn offered_here(tool: &str) -> bool {
-    match tool {
-        "opendiff" | "Kaleidoscope" | "deltawalker" => cfg!(target_os = "macos"),
-        "winmerge" => cfg!(windows),
-        _ => true,
-    }
+    let mac_only = matches!(tool, "opendiff" | "Kaleidoscope" | "deltawalker");
+    let windows_only = tool == "winmerge";
+    (cfg!(target_os = "macos") || !mac_only) && (cfg!(windows) || !windows_only)
 }
 
 /// Where each tool's launcher usually lives, so Git finds it even when Weave

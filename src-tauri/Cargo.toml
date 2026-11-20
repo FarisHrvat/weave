@@ -50,6 +50,7 @@ aes-kw = { version = "0.2.1", features = ["alloc"] }
 scrypt = { version = "0.11.0", default-features = false }
 sha1 = "0.10.6"
 unicode-normalization = "0.1.24"
+dunce = "1.0.5"
 serialport = { version = "4.10.1", default-features = false }
 crossterm = { version = "0.29.0", default-features = false, features = ["windows"] }
 

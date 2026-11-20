@@ -36,7 +36,7 @@ pub fn files_home() -> String {
 #[tauri::command]
 pub fn files_list(path: String) -> Result<FileListing, String> {
     let directory =
-        fs::canonicalize(&path).map_err(|error| format!("Cannot open {path}: {error}"))?;
+        dunce::canonicalize(&path).map_err(|error| format!("Cannot open {path}: {error}"))?;
     if !directory.is_dir() {
         return Err(format!("{} is not a folder.", directory.display()));
     }
@@ -149,9 +149,9 @@ fn safe_child(parent: &str, name: &str) -> Result<PathBuf, String> {
 }
 
 fn protected_directory(path: &Path) -> Result<bool, String> {
-    let directory = fs::canonicalize(path)
+    let directory = dunce::canonicalize(path)
         .map_err(|error| format!("Cannot inspect folder {}: {error}", path.display()))?;
-    let home = dirs::home_dir().and_then(|home| fs::canonicalize(home).ok());
+    let home = dirs::home_dir().and_then(|home| dunce::canonicalize(home).ok());
     Ok(directory.parent().is_none() || home.is_some_and(|home| home == directory))
 }
 
@@ -165,8 +165,8 @@ fn occupied(path: &Path) -> Result<bool, String> {
 
 fn transfer(source: &Path, destination_dir: &Path, conflict: &str) -> Result<PathBuf, String> {
     let source =
-        fs::canonicalize(source).map_err(|error| format!("Cannot find source: {error}"))?;
-    let destination_dir = fs::canonicalize(destination_dir)
+        dunce::canonicalize(source).map_err(|error| format!("Cannot find source: {error}"))?;
+    let destination_dir = dunce::canonicalize(destination_dir)
         .map_err(|error| format!("Cannot open destination: {error}"))?;
     if !destination_dir.is_dir() {
         return Err("Transfer destination must be a folder.".into());

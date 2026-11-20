@@ -6403,6 +6403,7 @@ dependencies = [
  "crossterm",
  "ctr 0.9.2",
  "dirs 6.0.0",
+ "dunce",
  "hmac 0.12.1",
  "httpdate",
  "keyring",

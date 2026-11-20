@@ -479,7 +479,7 @@ mod tests {
             ..host.clone()
         };
         let root = tempfile::tempdir().unwrap();
-        let base = root.path().canonicalize().unwrap();
+        let base = dunce::canonicalize(root.path()).unwrap();
         std::fs::create_dir_all(base.join("from/inner")).unwrap();
         std::fs::write(base.join("from/inner/a file.txt"), "between hosts").unwrap();
         let running = AtomicBool::new(true);

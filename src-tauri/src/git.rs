@@ -222,7 +222,7 @@ pub fn git_worktree_create(
         return Err("Choose a valid branch for the worktree.".into());
     }
     run(&path, &["check-ref-format", "--branch", branch])?;
-    let destination = fs::canonicalize(parent)
+    let destination = dunce::canonicalize(parent)
         .map_err(|error| format!("Could not read the worktree parent folder: {error}"))?
         .join(destination.file_name().unwrap());
     let destination = destination
@@ -233,14 +233,14 @@ pub fn git_worktree_create(
     } else {
         run(&path, &["worktree", "add", "--", destination, branch])?;
     }
-    fs::canonicalize(destination)
+    dunce::canonicalize(destination)
         .map(|path| path.to_string_lossy().into_owned())
         .map_err(|error| format!("Worktree was created, but its folder could not be read: {error}"))
 }
 
 #[tauri::command]
 pub fn git_worktree_remove(path: String, destination: String) -> Result<(), String> {
-    let destination = fs::canonicalize(&destination)
+    let destination = dunce::canonicalize(&destination)
         .map_err(|error| format!("Could not open the worktree folder: {error}"))?
         .to_string_lossy()
         .into_owned();
@@ -264,7 +264,7 @@ pub fn git_worktree_lock(
     destination: String,
     lock: bool,
 ) -> Result<Vec<GitWorktree>, String> {
-    let destination = fs::canonicalize(&destination)
+    let destination = dunce::canonicalize(&destination)
         .map(|path| path.to_string_lossy().into_owned())
         .unwrap_or(destination);
     let target = worktrees(&path)?
@@ -719,9 +719,9 @@ pub fn git_open_conflict_external(path: String, file: String) -> Result<(), Stri
     if run(&path, &["ls-files", "-u", "--", &file])?.is_empty() {
         return Err("This file has no unresolved merge conflict.".into());
     }
-    let root = fs::canonicalize(run(&path, &["rev-parse", "--show-toplevel"])?.trim())
+    let root = dunce::canonicalize(run(&path, &["rev-parse", "--show-toplevel"])?.trim())
         .map_err(|error| format!("Could not inspect repository: {error}"))?;
-    let destination = fs::canonicalize(&destination)
+    let destination = dunce::canonicalize(&destination)
         .map_err(|error| format!("The conflicted file is not present in the worktree: {error}"))?;
     if !destination.starts_with(&root) || !destination.is_file() {
         return Err("The conflicted file must be a regular file inside the repository.".into());
@@ -738,12 +738,12 @@ pub fn git_conflict_resolve(path: String, file: String, result: String) -> Resul
     if result.len() > 4 * 1024 * 1024 {
         return Err("The resolved file is too large for the built-in editor.".into());
     }
-    let root = fs::canonicalize(run(&path, &["rev-parse", "--show-toplevel"])?.trim())
+    let root = dunce::canonicalize(run(&path, &["rev-parse", "--show-toplevel"])?.trim())
         .map_err(|error| format!("Could not inspect repository: {error}"))?;
     let parent = destination
         .parent()
         .ok_or("Conflict file has no parent folder.")?;
-    let canonical_parent = fs::canonicalize(parent)
+    let canonical_parent = dunce::canonicalize(parent)
         .map_err(|error| format!("Could not open conflict folder: {error}"))?;
     if !canonical_parent.starts_with(&root) {
         return Err("Conflict file points outside the repository.".into());
@@ -909,9 +909,9 @@ fn redact_remote(remote: &str) -> String {
 pub fn git_diff(path: String, file: String, staged: bool) -> Result<String, String> {
     let target = checked_repo_file(&path, &file)?;
     if !staged && run(&path, &["ls-files", "--error-unmatch", "--", &file]).is_err() {
-        let root = fs::canonicalize(run(&path, &["rev-parse", "--show-toplevel"])?.trim())
+        let root = dunce::canonicalize(run(&path, &["rev-parse", "--show-toplevel"])?.trim())
             .map_err(|error| format!("Could not inspect repository: {error}"))?;
-        let target = fs::canonicalize(&target)
+        let target = dunce::canonicalize(&target)
             .map_err(|error| format!("Could not open untracked file: {error}"))?;
         if !target.starts_with(root) {
             return Err("The untracked file points outside the repository.".into());
@@ -1170,12 +1170,13 @@ pub fn git_operation(
             }
             if run(&path, &["ls-files", "--cached", "-z", "--", required()?])?.is_empty() {
                 let target = checked_repo_file(&path, value.trim_end_matches('/'))?;
-                let root = fs::canonicalize(run(&path, &["rev-parse", "--show-toplevel"])?.trim())
-                    .map_err(|error| format!("Could not inspect repository: {error}"))?;
+                let root =
+                    dunce::canonicalize(run(&path, &["rev-parse", "--show-toplevel"])?.trim())
+                        .map_err(|error| format!("Could not inspect repository: {error}"))?;
                 let parent = target
                     .parent()
                     .ok_or("Untracked file has no parent folder.")?;
-                let parent = fs::canonicalize(parent)
+                let parent = dunce::canonicalize(parent)
                     .map_err(|error| format!("Could not inspect untracked file folder: {error}"))?;
                 if !parent.starts_with(root) {
                     return Err("The untracked file points outside the repository.".into());
@@ -1542,7 +1543,7 @@ mod tests {
             git_worktree_create(path.clone(), destination.clone(), "feature".into(), true).unwrap();
         assert_eq!(
             created,
-            fs::canonicalize(&linked).unwrap().to_string_lossy()
+            dunce::canonicalize(&linked).unwrap().to_string_lossy()
         );
         let listed = git_worktrees(path.clone()).unwrap();
         assert_eq!(listed.len(), 2);
