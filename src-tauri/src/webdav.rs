@@ -820,6 +820,7 @@ fn parse_multistatus(xml: &[u8], base: &Url) -> Result<Vec<DavEntry>, String> {
 }
 
 #[cfg(test)]
+#[cfg_attr(windows, allow(unused_imports, dead_code))]
 mod tests {
     use super::*;
     use sha2::{Digest, Sha256};
@@ -844,6 +845,7 @@ cat client.pem client.key > identity.pem
         assert!(status.success());
     }
 
+    #[cfg(unix)]
     #[test]
     fn presents_a_client_certificate_to_servers_that_require_one() {
         use rustls::pki_types::{pem::PemObject, PrivateKeyDer};

@@ -45,6 +45,9 @@ jobs:
         with:
           workspaces: src-tauri
 
+      - name: Keep line endings as committed
+        run: git config --global core.autocrlf false
+
       - name: Install packages
         run: npm ci
 

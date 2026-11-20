@@ -722,7 +722,9 @@ mod tests {
         )
         .unwrap();
         assert_eq!(result.exit_code, Some(7));
-        assert!(result.stdout.contains(folder.path().to_str().unwrap()));
+        // Git's shell on Windows prints C:\Users\x as /c/Users/x.
+        let name = folder.path().file_name().unwrap().to_str().unwrap();
+        assert!(result.stdout.contains(name), "{}", result.stdout);
         assert!(result.stdout.contains("ready"));
         assert_eq!(result.stderr, "warning\n");
     }

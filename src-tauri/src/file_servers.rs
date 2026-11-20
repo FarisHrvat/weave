@@ -53,9 +53,11 @@ pub(crate) fn inside(root: &Path, requested: &str) -> Option<PathBuf> {
         }
     }
     // Follow links, so a link inside the folder cannot point outside it.
-    let resolved = match path.canonicalize() {
+    let resolved = match dunce::canonicalize(&path) {
         Ok(resolved) => resolved,
-        Err(_) => path.parent()?.canonicalize().ok()?.join(path.file_name()?),
+        Err(_) => dunce::canonicalize(path.parent()?)
+            .ok()?
+            .join(path.file_name()?),
     };
     resolved.starts_with(root).then_some(path)
 }
@@ -665,9 +667,7 @@ pub(crate) fn start(
     uploads: bool,
     app: Option<AppHandle>,
 ) -> Result<ServerInfo, String> {
-    let root = Path::new(folder)
-        .canonicalize()
-        .map_err(|_| "Choose a folder that exists.")?;
+    let root = dunce::canonicalize(folder).map_err(|_| "Choose a folder that exists.")?;
     if !root.is_dir() {
         return Err("Choose a folder to share.".into());
     }
@@ -884,7 +884,11 @@ mod tests {
         let folder = tempfile::tempdir().unwrap();
         std::fs::create_dir(folder.path().join("sub dir")).unwrap();
         std::fs::write(folder.path().join("sub dir/notes.txt"), "0123456789").unwrap();
-        std::fs::create_dir(folder.path().join("a\"><b>x")).unwrap();
+        // Windows does not allow these characters in file names.
+        let hostile_name = cfg!(unix);
+        if hostile_name {
+            std::fs::create_dir(folder.path().join("a\"><b>x")).unwrap();
+        }
         let info = start(
             "http",
             folder.path().to_str().unwrap(),
@@ -907,9 +911,11 @@ mod tests {
         let part = get("GET /sub%20dir/notes.txt HTTP/1.1\r\nRange: bytes=4-\r\n\r\n");
         assert!(part.starts_with("HTTP/1.1 206") && part.ends_with("456789"));
         assert!(get("GET /../../etc/passwd HTTP/1.1\r\n\r\n").starts_with("HTTP/1.1 403"));
-        let hostile = get("GET /a%22%3E%3Cb%3Ex/ HTTP/1.1\r\n\r\n");
-        assert!(hostile.starts_with("HTTP/1.1 200"), "{hostile}");
-        assert!(!hostile.contains("<b>"), "{hostile}");
+        if hostile_name {
+            let hostile = get("GET /a%22%3E%3Cb%3Ex/ HTTP/1.1\r\n\r\n");
+            assert!(hostile.starts_with("HTTP/1.1 200"), "{hostile}");
+            assert!(!hostile.contains("<b>"), "{hostile}");
+        }
         assert!(get("PUT /x HTTP/1.1\r\nContent-Length: 0\r\n\r\n").starts_with("HTTP/1.1 405"));
         file_server_stop(info.id).unwrap();
         assert!(inside(Path::new("/srv/files"), "a/../../b").is_none());
