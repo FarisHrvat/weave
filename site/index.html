@@ -1,0 +1,434 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Weave: Git, files and terminals in one app</title>
+    <meta
+      name="description"
+      content="Weave is a free desktop app for Git, file transfers and terminals on macOS, Windows and Linux. No account, no telemetry."
+    />
+    <meta name="color-scheme" content="dark light" />
+    <link rel="icon" href="icon.png" />
+    <style>
+      :root {
+        --bg: #12141b;
+        --panel: #1b1e28;
+        --line: #2a2e3b;
+        --text: #e8e9ef;
+        --muted: #9a9fb2;
+        --accent: #a99cf5;
+        --accent-strong: #c4baff;
+      }
+      @media (prefers-color-scheme: light) {
+        :root {
+          --bg: #f7f7fb;
+          --panel: #ffffff;
+          --line: #e2e3ec;
+          --text: #1b1d26;
+          --muted: #5d6275;
+          --accent: #6a58d6;
+          --accent-strong: #4f3dbd;
+        }
+      }
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        background: var(--bg);
+        color: var(--text);
+        font:
+          16px/1.6 -apple-system,
+          BlinkMacSystemFont,
+          "Segoe UI",
+          Ubuntu,
+          Cantarell,
+          "Helvetica Neue",
+          Arial,
+          sans-serif;
+      }
+      a {
+        color: var(--accent);
+      }
+      a:hover {
+        color: var(--accent-strong);
+      }
+      .wrap {
+        max-width: 1080px;
+        margin: 0 auto;
+        padding: 0 20px;
+      }
+      header.top {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 20px 0;
+      }
+      .brand {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        font-weight: 700;
+        font-size: 20px;
+        color: var(--text);
+        text-decoration: none;
+      }
+      .brand img {
+        width: 32px;
+        height: 32px;
+        border-radius: 8px;
+      }
+      nav a {
+        margin-left: 18px;
+        color: var(--muted);
+        text-decoration: none;
+        font-size: 15px;
+      }
+      nav a:hover {
+        color: var(--text);
+      }
+      .hero {
+        padding: 48px 0 32px;
+      }
+      .hero h1 {
+        margin: 0 0 12px;
+        font-size: clamp(32px, 5vw, 52px);
+        line-height: 1.1;
+        letter-spacing: -0.02em;
+      }
+      .hero p {
+        max-width: 640px;
+        margin: 0 0 24px;
+        color: var(--muted);
+        font-size: 18px;
+      }
+      .buttons {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px;
+      }
+      .button {
+        display: inline-block;
+        padding: 11px 18px;
+        border-radius: 10px;
+        border: 1px solid var(--line);
+        color: var(--text);
+        text-decoration: none;
+        font-weight: 600;
+      }
+      .button.primary {
+        background: var(--accent);
+        border-color: var(--accent);
+        color: #12141b;
+      }
+      .button.primary:hover {
+        background: var(--accent-strong);
+        color: #12141b;
+      }
+      .shot {
+        width: 100%;
+        height: auto;
+        margin: 32px 0 8px;
+        border-radius: 14px;
+        border: 1px solid var(--line);
+        display: block;
+      }
+      section {
+        padding: 40px 0;
+        border-top: 1px solid var(--line);
+      }
+      h2 {
+        margin: 0 0 18px;
+        font-size: 26px;
+      }
+      .grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+        gap: 16px;
+      }
+      .card {
+        background: var(--panel);
+        border: 1px solid var(--line);
+        border-radius: 12px;
+        padding: 18px 20px;
+      }
+      .card h3 {
+        margin: 0 0 8px;
+        font-size: 17px;
+      }
+      .card p {
+        margin: 0;
+        color: var(--muted);
+        font-size: 15px;
+      }
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 15px;
+      }
+      th,
+      td {
+        text-align: left;
+        padding: 10px 12px;
+        border-bottom: 1px solid var(--line);
+        vertical-align: top;
+      }
+      th {
+        color: var(--muted);
+        font-weight: 600;
+      }
+      .table-scroll {
+        overflow-x: auto;
+      }
+      .gallery {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+        gap: 16px;
+      }
+      .gallery figure {
+        margin: 0;
+      }
+      .gallery img {
+        width: 100%;
+        height: auto;
+        border-radius: 10px;
+        border: 1px solid var(--line);
+        display: block;
+      }
+      .gallery figcaption {
+        color: var(--muted);
+        font-size: 14px;
+        margin-top: 6px;
+      }
+      .muted {
+        color: var(--muted);
+      }
+      code {
+        font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+        font-size: 0.9em;
+      }
+      footer {
+        padding: 32px 0 48px;
+        border-top: 1px solid var(--line);
+        color: var(--muted);
+        font-size: 14px;
+      }
+      @media (max-width: 600px) {
+        nav a {
+          margin-left: 12px;
+          font-size: 14px;
+        }
+        .hero {
+          padding-top: 24px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="wrap">
+      <header class="top">
+        <a class="brand" href="./"><img src="icon.png" alt="" />Weave</a>
+        <nav>
+          <a href="#download">Download</a>
+          <a href="#privacy">Privacy</a>
+          <a href="https://github.com/FarisHrvat/weave">GitHub</a>
+        </nav>
+      </header>
+
+      <div class="hero">
+        <h1>Git, files and terminals in one app.</h1>
+        <p>
+          Weave is a free desktop app for macOS, Windows and Linux. Commit and
+          review code, move files to your servers and cloud storage, and work
+          in SSH terminals without switching between three programs. There is
+          no account and no telemetry.
+        </p>
+        <div class="buttons">
+          <a
+            class="button primary"
+            href="https://github.com/FarisHrvat/weave/releases/latest"
+            >Download</a
+          >
+          <a
+            class="button"
+            href="https://github.com/FarisHrvat/weave/blob/main/docs/TUTORIAL.md"
+            >Read the tutorial</a
+          >
+        </div>
+        <img
+          class="shot"
+          src="shots/15-git.png"
+          width="1440"
+          height="900"
+          alt="Weave showing a Git repository with branches, history and a diff"
+        />
+        <p class="muted">Weave is an alpha. Read the known limits before relying on it for important work.</p>
+      </div>
+
+      <section>
+        <h2>What it does</h2>
+        <div class="grid">
+          <div class="card">
+            <h3>Git</h3>
+            <p>
+              Stage lines or hunks, commit, push and pull, browse the graph and
+              blame, plan an interactive rebase, resolve conflicts, and work
+              with worktrees, Gitflow, submodules and Git LFS. Pull requests,
+              issues and CI checks for GitHub, GitLab, Bitbucket and Azure
+              DevOps.
+            </p>
+          </div>
+          <div class="card">
+            <h3>Files</h3>
+            <p>
+              Two panes for local folders, SFTP, FTP, FTPS, WebDAV, S3, Azure
+              Blob Storage, Dropbox, Google Drive and OneDrive. A transfer queue
+              with pause, resume and checksums, folder compare and sync, and
+              scheduled sync jobs.
+            </p>
+          </div>
+          <div class="card">
+            <h3>Terminals</h3>
+            <p>
+              Local shells and SSH, plus Telnet, serial, Mosh, X11, VNC and
+              RDP. Tabs and splits, broadcast input, search across tabs,
+              recording, triggers, snippets and shell integration.
+            </p>
+          </div>
+          <div class="card">
+            <h3>Hosts</h3>
+            <p>
+              Import from OpenSSH, FileZilla, WinSCP, PuTTY, MobaXterm,
+              Cyberduck, SecureCRT and Termius. Passwords and two-factor codes
+              are asked once and shared between the terminal and Files. Tunnels,
+              jump hosts and port knocking.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <section>
+        <h2>Screenshots</h2>
+        <div class="gallery">
+          <figure>
+            <img src="shots/09-files.png" width="1440" height="900" loading="lazy" alt="Two file panes, a local folder and an SFTP server" />
+            <figcaption>Files: a local folder next to an SFTP server.</figcaption>
+          </figure>
+          <figure>
+            <img src="shots/05-terminal.png" width="1440" height="900" loading="lazy" alt="A terminal tab running git status" />
+            <figcaption>Terminal with shell integration.</figcaption>
+          </figure>
+          <figure>
+            <img src="shots/18-git-compare.png" width="1440" height="900" loading="lazy" alt="Comparing two branches before a pull request" />
+            <figcaption>Comparing branches before a pull request.</figcaption>
+          </figure>
+          <figure>
+            <img src="shots/08-connect.png" width="1440" height="900" loading="lazy" alt="The new connection dialog with Telnet, serial, Mosh, X11, VNC and RDP" />
+            <figcaption>Other kinds of connection.</figcaption>
+          </figure>
+        </div>
+        <p class="muted">Screenshots are from macOS with sample data. Windows and Linux look the same apart from the window frame.</p>
+      </section>
+
+      <section id="download">
+        <h2>Download</h2>
+        <p>
+          Get the installer for your system from the
+          <a href="https://github.com/FarisHrvat/weave/releases/latest">latest release</a>.
+          Each release lists SHA-256 checksums for its files.
+        </p>
+        <div class="table-scroll">
+          <table>
+            <thead>
+              <tr><th>System</th><th>Installer</th><th>Needs</th></tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>macOS 11 or newer</td>
+                <td><code>.dmg</code> for Apple Silicon (aarch64) or Intel (x64)</td>
+                <td>Nothing extra. Git comes with the Xcode command line tools.</td>
+              </tr>
+              <tr>
+                <td>Windows 10 or 11, 64-bit</td>
+                <td><code>-setup.exe</code> or <code>.msi</code></td>
+                <td>Git for Windows. OpenSSH and WebView2 come with Windows.</td>
+              </tr>
+              <tr>
+                <td>Linux x86_64: Ubuntu 22.04, Debian 12, Fedora 38 or newer</td>
+                <td><code>.deb</code>, <code>.rpm</code> or <code>.AppImage</code></td>
+                <td>WebKitGTK 4.1, Git and OpenSSH, which the packages install.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <p class="muted">
+          The installers are not signed with a paid certificate, so the first
+          launch shows a warning. On macOS, open System Settings, then Privacy
+          &amp; Security, and click Open Anyway. On Windows, click More info,
+          then Run anyway. You can also
+          <a href="https://github.com/FarisHrvat/weave#build-from-source">build Weave from source</a>.
+        </p>
+      </section>
+
+      <section>
+        <h2>How it works on each system</h2>
+        <p>
+          Weave is built with Tauri, Rust and SolidJS. It uses the tools your
+          system already has: your own <code>git</code> and OpenSSH, so your
+          keys, agent and <code>known_hosts</code> work as they do in a normal
+          terminal.
+        </p>
+        <div class="table-scroll">
+          <table>
+            <thead>
+              <tr><th></th><th>macOS</th><th>Windows</th><th>Linux</th></tr>
+            </thead>
+            <tbody>
+              <tr><td>Saved passwords</td><td>Keychain</td><td>Credential Manager</td><td>Secret Service (GNOME Keyring, KWallet)</td></tr>
+              <tr><td>App lock</td><td>Touch ID or your Mac password</td><td>Weave lock password</td><td>Weave lock password</td></tr>
+              <tr><td>Network shares</td><td>Finder</td><td>File Explorer</td><td>GVFS</td></tr>
+              <tr><td>System VPNs</td><td>macOS VPN services</td><td>Windows VPN connections</td><td>NetworkManager and WireGuard</td></tr>
+              <tr><td>Terminal copy and paste</td><td>⌘C, ⌘V</td><td>Ctrl+Shift+C, Ctrl+Shift+V</td><td>Ctrl+Shift+C, Ctrl+Shift+V</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section id="privacy">
+        <h2>Privacy</h2>
+        <p>
+          Weave has no account, no telemetry, no analytics and no automatic
+          updates. Your hosts and history stay on your computer and your
+          passwords stay in your system's credential store. The app connects
+          only to the servers you set up, and to Anthropic only if you press one
+          of the optional AI buttons with your own API key.
+        </p>
+        <p>
+          This website sets no cookies and loads no scripts, fonts or trackers.
+          It is hosted on GitHub Pages, so GitHub receives standard request
+          data such as your IP address. The full notice is in
+          <a href="https://github.com/FarisHrvat/weave/blob/main/PRIVACY.md">PRIVACY.md</a>.
+        </p>
+      </section>
+
+      <section>
+        <h2>Security</h2>
+        <p>
+          Secrets never go into Weave's database, logs or exports. SSH prompts
+          are answered over a private channel with a one-time token, server
+          file names are checked so a hostile server cannot write outside your
+          folder, and settings vaults are encrypted with AES-256-GCM and
+          Argon2id. Weave has not had an independent audit.
+          <a href="https://github.com/FarisHrvat/weave/blob/main/SECURITY.md">SECURITY.md</a>
+          has the details and says how to report a problem privately.
+        </p>
+      </section>
+
+      <footer>
+        Weave is MIT licensed. Made by Faris Hrvat. Contact:
+        <a href="mailto:AssayPlot@pm.me">AssayPlot@pm.me</a>.
+      </footer>
+    </div>
+  </body>
+</html>
