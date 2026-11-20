@@ -1,0 +1,12 @@
+{
+  "version": 1,
+  "transfers": [
+    {
+      "sourceProfile": null,
+      "sourcePath": "/Users/you/Documents/report.pdf",
+      "destinationProfile": "My NAS",
+      "destinationDir": "/shared/reports",
+      "conflict": "rename"
+    }
+  ]
+}
