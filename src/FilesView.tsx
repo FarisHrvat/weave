@@ -1,6 +1,12 @@
 import { confirmAction } from "./dialogs";
 import { fixedShortcuts, shortcutLabel } from "./shortcuts";
-import { fileManager, primaryKey, systemName, thisComputer } from "./platform";
+import {
+  fileManager,
+  isMac,
+  primaryKey,
+  systemName,
+  thisComputer,
+} from "./platform";
 import MenuButton from "./MenuButton";
 import CryptomatorDialog from "./CryptomatorDialog";
 import FileToolDialogs, { type FileTool } from "./FileToolDialogs";
@@ -1597,8 +1603,9 @@ export default function FilesView(props: Props) {
           <h1>Files</h1>
           <p class="muted page-description">
             Local folders, SFTP, FTP, FTPS, WebDAV, S3, Azure Blob and cloud
-            drives side by side. Command-click or Shift-click to select several
-            items; transfers run in the activity queue.
+            drives side by side. {isMac ? "Command" : "Ctrl"}-click or
+            Shift-click to select several items; transfers run in the activity
+            queue.
           </p>
         </div>
         <div class="toolbar-actions">
