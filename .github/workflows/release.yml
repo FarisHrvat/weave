@@ -66,9 +66,11 @@ jobs:
           tagName: ${{ github.ref_name }}
           releaseName: Weave ${{ github.ref_name }}
           releaseBody: |
-            Installers for macOS (Apple Silicon and Intel), Windows and Linux.
-            They are not signed with a paid certificate; see the README for how to open them the first time.
-            SHA-256 checksums are in SHA256SUMS.txt.
+            Builds for macOS (Apple Silicon and Intel), Windows and Linux.
+
+            The apps aren't signed with a paid certificate, so macOS and Windows warn on first launch. The README explains how to open them.
+
+            Checksums are in SHA256SUMS.txt.
           releaseDraft: true
           prerelease: true
           args: ${{ matrix.args }}
