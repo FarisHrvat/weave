@@ -122,7 +122,7 @@ fn parse_status(output: &str) -> Result<TailnetStatus, String> {
         .into_values()
         .filter_map(peer)
         .collect();
-    peers.sort_by(|a, b| a.name.to_lowercase().cmp(&b.name.to_lowercase()));
+    peers.sort_by_key(|peer| peer.name.to_lowercase());
     Ok(TailnetStatus {
         installed: true,
         state: if status.backend_state.is_empty() {

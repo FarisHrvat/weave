@@ -211,7 +211,7 @@ fn send_wake_packet(mac: &str, address: Ipv4Addr, port: u16) -> Result<String, S
         return Err("Enter a Wake-on-LAN UDP port between 1 and 65535.".into());
     }
     let mut packet = [0xff; 102];
-    for chunk in packet[6..].chunks_exact_mut(6) {
+    for chunk in packet[6..].as_chunks_mut::<6>().0 {
         chunk.copy_from_slice(&mac_bytes);
     }
     let socket = UdpSocket::bind((Ipv4Addr::UNSPECIFIED, 0))
@@ -298,7 +298,7 @@ mod tests {
         let (length, _) = receiver.recv_from(&mut packet).unwrap();
         assert_eq!(length, 102);
         assert_eq!(&packet[..6], &[0xff; 6]);
-        for chunk in packet[6..].chunks_exact(6) {
+        for chunk in packet[6..].as_chunks::<6>().0 {
             assert_eq!(chunk, &[0, 17, 34, 51, 68, 85]);
         }
     }

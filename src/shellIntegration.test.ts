@@ -16,7 +16,13 @@ function run(script: string, home: string, shell: string) {
   }).toString();
 }
 
-describe("shell integration", () => {
+// These tests run the real installer in zsh and bash, so they need a Unix
+// system with both shells.
+const shellsInstalled = ["/bin/sh", "/bin/zsh", "/bin/bash"].every((path) =>
+  existsSync(path),
+);
+
+describe.skipIf(!shellsInstalled)("shell integration", () => {
   it("installs once, keeps existing startup lines, and uninstalls cleanly", () => {
     const home = mkdtempSync(join(tmpdir(), "weave-shell-"));
     writeFileSync(join(home, ".zshrc"), "export KEEP=1\n");
@@ -64,7 +70,9 @@ describe("shell integration", () => {
     run(uninstallerScript(), home, "/bin/zsh");
     expect(existsSync(fish)).toBe(false);
   });
+});
 
+describe("prompt marks", () => {
   it("parses OSC 133 marks", () => {
     expect(parseOsc133("A")).toEqual({ kind: "prompt" });
     expect(parseOsc133("D;2")).toEqual({ kind: "finished", exitCode: 2 });

@@ -76,7 +76,7 @@ mod system {
                 identity,
             ));
         }
-        found.sort_by(|a, b| a.0.name.to_lowercase().cmp(&b.0.name.to_lowercase()));
+        found.sort_by_key(|item| item.0.name.to_lowercase());
         Ok(found)
     }
 
@@ -231,7 +231,7 @@ mod system {
                 },
             ));
         }
-        found.sort_by(|a, b| a.1.name.to_lowercase().cmp(&b.1.name.to_lowercase()));
+        found.sort_by_key(|item| item.1.name.to_lowercase());
         found
     }
 
