@@ -1,0 +1,31 @@
+# Dependencies and build output
+node_modules/
+.pnpm-store/
+dist/
+src-tauri/target/
+src-tauri/gen/schemas/
+*.dmg
+*.msi
+*.AppImage
+*.deb
+*.rpm
+
+# Local tools and editor files
+.DS_Store
+*.log
+.vscode/
+.idea/
+.claude/
+graphify-out/
+coverage/
+
+# Never commit secrets or local settings
+.env
+.env.*
+*.pem
+*.p12
+*.pfx
+*.key
+id_rsa*
+id_ed25519*
+app-plan.md

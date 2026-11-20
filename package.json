@@ -1,0 +1,42 @@
+{
+  "name": "weave-desktop",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc --noEmit && vite build",
+    "dist:mac": "bash scripts/verify-macos.sh",
+    "test:mac": "bash scripts/test-macos.sh",
+    "verify:mac": "bash scripts/verify-macos.sh",
+    "format:check": "prettier --check \"src/**/*.{ts,tsx,css}\" package.json src-tauri/tauri.conf.json",
+    "test": "vitest run --environment node",
+    "tauri": "tauri"
+  },
+  "dependencies": {
+    "@novnc/novnc": "1.7.0",
+    "@tauri-apps/api": "2.12.1",
+    "@tauri-apps/plugin-clipboard-manager": "2.5.0",
+    "@tauri-apps/plugin-dialog": "2.8.1",
+    "@tauri-apps/plugin-opener": "^2.7.0",
+    "@xterm/addon-fit": "0.11.0",
+    "@xterm/addon-image": "0.9.0",
+    "@xterm/addon-search": "^0.16.0",
+    "@xterm/addon-web-links": "^0.12.0",
+    "@xterm/xterm": "6.0.0",
+    "highlight.js": "11.11.1",
+    "lucide-solid": "0.577.0",
+    "solid-js": "1.9.17",
+    "zmodem.js": "0.1.10"
+  },
+  "devDependencies": {
+    "@tauri-apps/cli": "2.12.1",
+    "azurite": "3.35.0",
+    "prettier": "^3.9.5",
+    "typescript": "6.0.3",
+    "vite": "7.3.6",
+    "vite-plugin-solid": "2.11.8",
+    "vitest": "4.1.11"
+  },
+  "license": "MIT"
+}
